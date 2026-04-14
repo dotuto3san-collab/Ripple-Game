@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RippleGame Mobile</title>
+    <style>
+        body {
+            background-color: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: white;
+            font-family: sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            background-color: #333;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            max-width: 95vw;
+            position: relative;
+        }
+        @media (max-width: 850px) {
+            #game-container {
+                flex-direction: column;
+                align-items: center;
+                overflow-y: auto;
+                max-height: 95vh;
+            }
+            #inspector { width: 100% !important; box-sizing: border-box; }
+        }
+        canvas {
+            border: 2px solid #555;
+            background-color: #1a1a1a;
+            max-width: 100%;
+            height: auto;
+            touch-action: none;
+        }
+        #inspector {
+            width: 240px;
+            display: flex;
+            flex-direction: column;
+            background-color: #444;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #666;
+            padding-bottom: 5px;
+        }
+        .usage-text { font-size: 11px; color: #ccc; margin-bottom: 10px; line-height: 1.4; }
+        .scroll-area {
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 200px;
+            margin-bottom: 10px;
+            background: #2b2b2b;
+            padding: 5px;
+        }
+        .click-entry {
+            background-color: #555; padding: 5px; margin-bottom: 5px;
+            border-radius: 3px; display: flex; gap: 5px; align-items: center;
+        }
+        .click-entry input {
+            width: 40px; background-color: #222; color: #fff;
+            border: 1px solid #777; text-align: center; font-size: 16px;
+        }
+        .active-entry { border: 2px solid #ffff00; }
+        
+        button {
+            cursor: pointer; color: white; border: none; padding: 12px 8px;
+            border-radius: 3px; font-weight: bold; margin-top: 5px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-plus { background-color: #4a4; padding: 5px 15px; }
+        .btn-start { background-color: #44a; }
+        .btn-stop { background-color: #a44; }
+        .btn-reset { background-color: #666; }
+        .btn-retry { background-color: #d4a017; margin-top: 15px; padding: 15px; font-size: 18px; }
+
+        .btn-remove {
+            background-color: #a44;
+            padding: 2px 8px;
+            margin-top: 0;
+            font-size: 16px;
+            line-height: 1.2;
+        }
+        .btn-remove:active { background-color: #f44; }
+
+        #menuBtn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            border: 1px solid #777;
+            padding: 8px 12px;
+            z-index: 10;
+            display: none;
+        }
+        #menuBtn:active { background-color: #555; }
+
+        .control-group {
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid #666;
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        input[type="range"] { width: 100%; height: 30px; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <button id="menuBtn" onclick="backToTitle()">MENU</button>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="inspector" style="display: none;">
+        <div class="header">
+            Auto Play
+            <button class="btn-plus" onclick="addEntry()">+</button>
+        </div>
+        <div class="usage-text">座標をリストに追加し、STARTで自動実行します。</div>
+        <div id="scrollArea" class="scroll-area"></div>
+        
+        <div class="control-group">
+            <label>Speed: x<span id="speedVal">1.0</span></label>
+            <input type="range" id="speedRange" min="0.5" max="10.0" step="0.1" value="1.0" oninput="updateSpeed(this.value)">
+            
+            <button id="autoStartBtn" class="btn-start" onclick="toggleAutoPlay()">START AUTO</button>
+            <button class="btn-reset" onclick="resetBoard()">RESET BOARD</button>
+            <div id="winControls" style="display:none;">
+                <button class="btn-retry" onclick="retryGame()">RETRY LEVEL</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const WIDTH = 640;
+const HEIGHT = 480;
+const PADDING = 40; 
+const MIN_LIMIT = 2;
+const MAX_LIMIT = 255;
+
+let state = 'TITLE'; 
+let colsInput = "5";   
+let rowsInput = "5";
+let activeInput = 'cols'; 
+let cellSize = 50;   
+
+let board = null;
+let isWin = false;
+let hasStarted = false;
+
+let autoEntries = [];
+let autoIndex = -1;
+let isAutoPlaying = false;
+let autoTimer = null;
+let autoSpeed = 1000;
+
+class Source {
+    constructor(x, y, maxDist) {
+        this.x = x; this.y = y; this.time = 0; this.maxDist = maxDist;
+    }
+    step() {
+        this.time++;
+        if (this.time > this.maxDist) this.time = this.maxDist;
+    }
+}
+
+class Board {
+    constructor(w, h) {
+        this.width = w; this.height = h;
+        this.cells = new Array(w * h).fill(false);
+        this.sources = [];
+        this.maxDist = w + h;
+    }
+    addSource(x, y) {
+        this.sources.push(new Source(x, y, this.maxDist));
+    }
+    step() { for (let s of this.sources) s.step(); }
+    update() {
+        this.cells.fill(false);
+        for (let s of this.sources) {
+            for (let y = 0; y < this.height; y++) {
+                const rowOffset = y * this.width;
+                for (let x = 0; x < this.width; x++) {
+                    const dist = Math.abs(x - s.x) + Math.abs(y - s.y);
+                    if (dist <= s.time) this.cells[rowOffset + x] = !this.cells[rowOffset + x];
+                }
+            }
+        }
+    }
+}
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const inspector = document.getElementById('inspector');
+const menuBtn = document.getElementById('menuBtn');
+canvas.width = WIDTH;
+canvas.height = HEIGHT;
+
+// ★ ここで入力をリアルタイムで強制補正します
+function forceClamp(val) {
+    if (val === "") return ""; // 入力途中は空を許容
+    let num = parseInt(val);
+    if (isNaN(num)) return MIN_LIMIT.toString();
+    if (num < MIN_LIMIT) return MIN_LIMIT.toString();
+    if (num > MAX_LIMIT) return MAX_LIMIT.toString();
+    return num.toString();
+}
+
+function initGame() {
+    // 開始時に最終確認
+    if (colsInput === "" || parseInt(colsInput) < MIN_LIMIT) colsInput = MIN_LIMIT.toString();
+    if (rowsInput === "" || parseInt(rowsInput) < MIN_LIMIT) rowsInput = MIN_LIMIT.toString();
+    
+    let c = parseInt(colsInput);
+    let r = parseInt(rowsInput);
+    
+    board = new Board(c, r);
+    isWin = false;
+    hasStarted = false;
+    autoIndex = -1;
+    document.getElementById('winControls').style.display = 'none';
+
+    cellSize = Math.min((WIDTH - PADDING * 2) / c, (HEIGHT - PADDING * 2) / r, 80);
+    state = 'PLAY';
+    inspector.style.display = 'flex';
+    menuBtn.style.display = 'block';
+    draw();
+}
+
+function backToTitle() {
+    stopAutoPlay();
+    state = 'TITLE';
+    inspector.style.display = 'none';
+    menuBtn.style.display = 'none';
+    draw();
+}
+
+function resetBoard() {
+    if (!board) return;
+    board.sources = [];
+    board.update();
+    isWin = false;
+    hasStarted = false;
+    document.getElementById('winControls').style.display = 'none';
+    draw();
+}
+
+function retryGame() {
+    resetBoard();
+    if (isAutoPlaying) stopAutoPlay();
+}
+
+function updateSpeed(val) {
+    const multiplier = parseFloat(val);
+    autoSpeed = 1000 / multiplier; 
+    document.getElementById('speedVal').innerText = multiplier.toFixed(1);
+}
+
+function addEntry() {
+    autoEntries.push({ x: 0, y: 0, id: Date.now() });
+    renderInspector();
+}
+
+function removeEntry(id) {
+    autoEntries = autoEntries.filter(e => e.id !== id);
+    renderInspector();
+}
+
+function renderInspector() {
+    const area = document.getElementById('scrollArea');
+    area.innerHTML = '';
+    autoEntries.forEach((entry, index) => {
+        const div = document.createElement('div');
+        div.className = `click-entry ${index === autoIndex ? 'active-entry' : ''}`;
+        div.innerHTML = `
+            <span>${index}:</span>
+            X <input type="number" value="${entry.x}" oninput="autoEntries[${index}].x=parseInt(this.value)||0">
+            Y <input type="number" value="${entry.y}" oninput="autoEntries[${index}].y=parseInt(this.value)||0">
+            <button class="btn-remove" onclick="removeEntry(${entry.id})">×</button>
+        `;
+        area.appendChild(div);
+    });
+}
+
+function toggleAutoPlay() {
+    if (isAutoPlaying) stopAutoPlay();
+    else {
+        if (autoEntries.length === 0) return;
+        isAutoPlaying = true;
+        document.getElementById('autoStartBtn').innerText = "STOP AUTO";
+        document.getElementById('autoStartBtn').className = "btn-stop";
+        processNextAuto();
+    }
+}
+
+function stopAutoPlay() {
+    isAutoPlaying = false;
+    autoIndex = -1;
+    clearTimeout(autoTimer);
+    document.getElementById('autoStartBtn').innerText = "START AUTO";
+    document.getElementById('autoStartBtn').className = "btn-start";
+    renderInspector();
+}
+
+function processNextAuto() {
+    if (!isAutoPlaying || isWin) return;
+    autoIndex++;
+    if (autoIndex >= autoEntries.length) autoIndex = 0;
+
+    const entry = autoEntries[autoIndex];
+    if (entry.x < board.width && entry.y < board.height) {
+        board.addSource(entry.x, entry.y);
+        board.step();
+        board.update();
+        hasStarted = true;
+        checkWin();
+    }
+    renderInspector();
+    draw();
+    autoTimer = setTimeout(processNextAuto, autoSpeed);
+}
+
+function checkWin() {
+    if (hasStarted && (board.cells.every(c => !c) || board.cells.every(c => c))) {
+        isWin = true;
+        stopAutoPlay();
+        document.getElementById('winControls').style.display = 'block';
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    if (state === 'TITLE') drawTitle();
+    else drawPlay();
+}
+
+function drawTitle() {
+    ctx.fillStyle = "white"; ctx.textAlign = "center";
+    ctx.font = "bold 50px sans-serif"; ctx.fillText("RippleGame", WIDTH / 2, 80);
+    
+    ctx.font = "16px sans-serif";
+    ctx.textAlign = "left";
+    const rules = [
+        "・タップした場所から、波紋のように色が塗られていきます",
+        "・既に色が塗られている場所は、重なると色が消えます",
+        "・すべてのタイルを「塗る」か「消す」ことができれば勝利！"
+    ];
+    ctx.fillStyle = "#ddd";
+    rules.forEach((line, i) => {
+        ctx.fillText(line, WIDTH / 2 - 200, 140 + i * 25);
+    });
+
+    ctx.textAlign = "center";
+    ctx.font = "24px sans-serif";
+    ctx.fillStyle = (activeInput === 'cols') ? "#ffff00" : "white";
+    ctx.fillText(`Cols: ${colsInput}${activeInput === 'cols' ? '_' : ''}`, WIDTH / 2, 260);
+    ctx.fillStyle = (activeInput === 'rows') ? "#ffff00" : "white";
+    ctx.fillText(`Rows: ${rowsInput}${activeInput === 'rows' ? '_' : ''}`, WIDTH / 2, 300);
+    
+    ctx.font = "14px sans-serif";
+    ctx.fillStyle = "#aaa";
+    ctx.fillText(`設定可能範囲: ${MIN_LIMIT} 〜 ${MAX_LIMIT}`, WIDTH / 2, 330);
+    ctx.fillText("数字をタップして入力 / ENTERで開始", WIDTH / 2, 350);
+
+    ctx.fillStyle = "white"; ctx.font = "bold 24px sans-serif";
+    ctx.fillText("START GAME", WIDTH / 2, 410);
+    ctx.strokeStyle = "white"; ctx.lineWidth = 2;
+    ctx.strokeRect(WIDTH / 2 - 100, 380, 200, 45);
+}
+
+function drawPlay() {
+    const offsetX = (WIDTH - board.width * cellSize) / 2;
+    const offsetY = (HEIGHT - board.height * cellSize) / 2;
+    const gap = cellSize > 5 ? 1 : 0;
+    for (let y = 0; y < board.height; y++) {
+        for (let x = 0; x < board.width; x++) {
+            const isOn = board.cells[y * board.width + x];
+            ctx.fillStyle = isOn ? 'rgb(255, 255, 0)' : 'rgb(50, 50, 50)';
+            ctx.fillRect(offsetX + x * cellSize, offsetY + y * cellSize, cellSize - gap, cellSize - gap);
+        }
+    }
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("タップ: 波紋を広げる", 15, 65);
+    ctx.fillText("ESC: タイトルへ", 15, 85);
+
+    if (isWin) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "bold 40px sans-serif";
+        ctx.fillText("YOU WIN!", WIDTH / 2, HEIGHT / 2);
+    }
+}
+
+function handleInteraction(ex, ey) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = WIDTH / rect.width;
+    const scaleY = HEIGHT / rect.height;
+    const mx = (ex - rect.left) * scaleX;
+    const my = (ey - rect.top) * scaleY;
+
+    if (state === 'TITLE') {
+        if (mx > WIDTH/2 - 100 && mx < WIDTH/2 + 100 && my > 380 && my < 425) {
+            initGame();
+        } else if (my > 230 && my < 270) {
+            activeInput = 'cols';
+            const val = prompt(`列数を入力してください (${MIN_LIMIT}-${MAX_LIMIT})`, colsInput);
+            if (val !== null) colsInput = forceClamp(val.replace(/[^0-9]/g, ""));
+        } else if (my > 270 && my < 310) {
+            activeInput = 'rows';
+            const val = prompt(`行数を入力してください (${MIN_LIMIT}-${MAX_LIMIT})`, rowsInput);
+            if (val !== null) rowsInput = forceClamp(val.replace(/[^0-9]/g, ""));
+        }
+        draw();
+    } else if (state === 'PLAY') {
+        if (isWin || isAutoPlaying) return;
+        const offsetX = (WIDTH - board.width * cellSize) / 2;
+        const offsetY = (HEIGHT - board.height * cellSize) / 2;
+        const x = Math.floor((mx - offsetX) / cellSize);
+        const y = Math.floor((my - offsetY) / cellSize);
+
+        if (x >= 0 && y >= 0 && x < board.width && y < board.height) {
+            board.addSource(x, y); board.step(); board.update();
+            hasStarted = true; checkWin(); draw();
+        }
+    }
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    handleInteraction(e.clientX, e.clientY);
+});
+
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    handleInteraction(touch.clientX, touch.clientY);
+}, { passive: false });
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        backToTitle(); return;
+    }
+    if (state === 'TITLE') {
+        if (e.key === 'Enter') {
+            initGame();
+        } else if (e.key === 'Tab' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault(); activeInput = (activeInput === 'cols') ? 'rows' : 'cols';
+        } else if (e.key >= '0' && e.key <= '9') {
+            if (activeInput === 'cols') { 
+                colsInput = forceClamp(colsInput + e.key); 
+            } else { 
+                rowsInput = forceClamp(rowsInput + e.key); 
+            }
+        } else if (e.key === 'Backspace') {
+            if (activeInput === 'cols') colsInput = colsInput.slice(0, -1);
+            else rowsInput = rowsInput.slice(0, -1);
+        }
+        draw();
+    }
+});
+
+draw();
+</script>
+</body>
+</html>
