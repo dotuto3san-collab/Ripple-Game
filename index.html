@@ -15,7 +15,7 @@
             margin: 0; 
             color: white; 
             font-family: system-ui, -apple-system, sans-serif; 
-            touch-action: none; 
+            touch-action: none; /* 全体での不要なズーム防止 */
             overflow: hidden; 
         }
         
@@ -67,7 +67,7 @@
         #toggleInspector {
             display: none;
             position: absolute;
-            right: -40px; /* 左から出るのでボタンは右側に配置 */
+            right: -40px;
             top: 0;
             width: 40px;
             height: 40px;
@@ -102,7 +102,7 @@
         #langBtn { position: absolute; top: 10px; right: 10px; background: #444; font-size: 14px; padding: 8px 16px; border: 1px solid #666; z-index: 50; border-radius: 4px; color: white; }
         #menuBtn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); border: 1px solid #fff; padding: 8px 16px; z-index: 45; display: none; border-radius: 4px; }
         
-        button { cursor: pointer; color: white; border: none; border-radius: 3px; font-weight: bold; }
+        button { cursor: pointer; color: white; border: none; border-radius: 3px; font-weight: bold; touch-action: manipulation; }
         .btn-plus { background-color: #4a4; padding: 2px 10px; font-size: 16px; }
         
         .control-group { 
@@ -114,34 +114,38 @@
         input[type="range"] { width: 100%; margin: 4px 0; }
 
         @media (max-width: 1024px) {
-            body { overflow-y: auto; touch-action: auto; align-items: flex-start; padding: 0; }
+            body { align-items: stretch; padding: 0; }
             #game-container { 
                 flex-direction: column; 
                 width: 100%; 
-                height: auto; 
+                height: 100dvh; 
                 max-width: 100vw; 
                 padding: 0;
                 gap: 0;
+                background: none;
             }
-            #canvas-area { width: 100%; height: 60dvh; border: none; border-radius: 0; }
+            #canvas-area { width: 100%; height: 100%; border: none; border-radius: 0; }
             #inspector { 
                 position: fixed;
-                left: 0; /* 左側に配置 */
+                left: 0;
                 top: 60px;
-                width: 220px; /* 少し小さめに */
+                width: 240px;
                 height: auto;
-                max-height: 70dvh;
+                max-height: 60dvh;
+                background-color: rgba(68, 68, 68, 0.8); /* 盤面が見えるよう透過 */
+                backdrop-filter: blur(4px);
                 z-index: 1000;
-                transform: translateX(-100%); /* 左側に隠す */
+                transform: translateX(-100%);
                 box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+                border-radius: 0 8px 8px 0;
             }
             #inspector.open { transform: translateX(0); }
-            #toggleInspector { display: block; }
+            #toggleInspector { display: block; width: 45px; height: 45px; right: -45px; }
             
-            /* スマホ版AUTOPLAYの列調整 */
-            .click-entry { padding: 5px; gap: 2px; }
-            .click-entry input { width: 45px; height: 25px; font-size: 14px; }
-            .click-entry span { min-width: 25px; }
+            /* スマホ版+ボタンと列の大きさ変更 */
+            .btn-plus { padding: 8px 20px; font-size: 20px; }
+            .click-entry { padding: 6px; }
+            .click-entry input { width: 45px; height: 30px; font-size: 14px; }
         }
     </style>
 </head>
@@ -178,17 +182,7 @@
 <script>
 const i18n = {
     ja: {
-        rules: [
-            "【遊び方】",
-            "・タイルをタップして波紋を広げます。",
-            "・波紋が通過したタイルの色は反転します。",
-            "・画面内の全タイルを同じ色に揃えればクリア！",
-            "",
-            "【操作】",
-            "・タップ：波紋の発生",
-            "・右クリック/2本指ドラッグ：盤面の移動",
-            "・ホイール/ピンチ：ズーム"
-        ],
+        rules: ["【遊び方】","・タイルをタップして波紋を広げます。","・波紋が通過したタイルの色は反転します。","・画面内の全タイルを同じ色に揃えればクリア！","","【操作】","・タップ：波紋の発生","・右クリック/2本指ドラッグ：盤面の移動","・ホイール/ピンチ：ズーム"],
         titleDesc: "サイズ設定：数字をタップして変更（2-255）",
         startBtn: "START GAME", autoPlay: "Auto Play",
         usage: "＋で座標を追加。STARTで順次実行。移動やズームで盤面を確認できます。",
@@ -196,17 +190,7 @@ const i18n = {
         win: "CLEAR!!", promptCols: "列数を入力", promptRows: "行数を入力"
     },
     en: {
-        rules: [
-            "【HOW TO PLAY】",
-            "• Tap a tile to generate a ripple.",
-            "• Tiles hit by ripples flip their colors.",
-            "• Clear by making all tiles the same color!",
-            "",
-            "【CONTROLS】",
-            "• Tap: Generate ripple",
-            "• Right-click/2-Finger drag: Pan board",
-            "• Wheel/Pinch: Zoom"
-        ],
+        rules: ["【HOW TO PLAY】","• Tap a tile to generate a ripple.","• Tiles hit by ripples flip their colors.","• Clear by making all tiles the same color!","","【CONTROLS】","• Tap: Generate ripple","• Right-click/2-Finger drag: Pan board","• Wheel/Pinch: Zoom"],
         titleDesc: "Size: Tap numbers to change (2-255)",
         startBtn: "START GAME", autoPlay: "Auto Play",
         usage: "Tap '+' to add points. START runs them in order. Pan and zoom to inspect.",
@@ -220,7 +204,7 @@ const WIDTH = 800, HEIGHT = 600;
 let state = 'TITLE', colsInput = "5", rowsInput = "5", activeInput = 'cols', board = null;
 let isWin = false, hasStarted = false, scale = 1.0, camX = WIDTH/2, camY = HEIGHT/2;
 let isDragging = false, lastMouseX = 0, lastMouseY = 0, baseCellSize = 50;
-let lastPinchDist = 0, isPinching = false;
+let lastPinchDist = 0, isPinching = false, lastInteractionTime = 0;
 let autoEntries = [], autoIndex = -1, isAutoPlaying = false, autoTimer = null, autoSpeed = 1000;
 
 class Source { constructor(x, y, maxDist) { this.x = x; this.y = y; this.time = 0; this.maxDist = maxDist; } step() { if (this.time < this.maxDist) this.time++; } }
@@ -260,8 +244,7 @@ function updateUIText() {
 function initGame() {
     let c = parseInt(colsInput) || 5, r = parseInt(rowsInput) || 5;
     board = new Board(c, r); isWin = false; hasStarted = false; autoIndex = -1;
-    baseCellSize = 50;
-    scale = Math.min(WIDTH/(c*baseCellSize+40), HEIGHT/(r*baseCellSize+40), 1.0);
+    scale = Math.min(WIDTH/(c*50+40), HEIGHT/(r*50+40), 1.0);
     camX = WIDTH/2; camY = HEIGHT/2;
     state = 'PLAY'; inspector.style.display = 'flex'; menuBtn.style.display = 'block'; langBtn.style.display = 'none';
     document.getElementById('extra-link').style.display = 'none';
@@ -269,7 +252,6 @@ function initGame() {
 }
 
 function backToTitle() { stopAutoPlay(); state = 'TITLE'; inspector.style.display = 'none'; menuBtn.style.display = 'none'; langBtn.style.display = 'block'; document.getElementById('extra-link').style.display = 'block'; draw(); }
-
 function toggleInspector() { inspector.classList.toggle('open'); }
 
 function draw() {
@@ -306,6 +288,8 @@ function draw() {
 }
 
 function handleInteraction(clientX, clientY) {
+    if (Date.now() - lastInteractionTime < 100) return; // 連打による意図しない多重反応防止
+    lastInteractionTime = Date.now();
     const rect = canvas.getBoundingClientRect();
     const mx = (clientX - rect.left) * (WIDTH / rect.width);
     const my = (clientY - rect.top) * (HEIGHT / rect.height);
@@ -325,28 +309,19 @@ function handleInteraction(clientX, clientY) {
     }
 }
 
-// 多重反応防止用のフラグ
-let touchStartTime = 0;
-
 canvas.addEventListener('mousedown', e => {
-    if (Date.now() - touchStartTime < 500) return; // タッチ直後のマウスエミュレーションを無視
     lastMouseX = e.clientX; lastMouseY = e.clientY;
     if (e.button === 2 || e.button === 1) { isDragging = true; return; }
     handleInteraction(e.clientX, e.clientY);
 });
 window.addEventListener('mousemove', e => {
-    if (isDragging) {
-        camX += (e.clientX - lastMouseX) * (WIDTH / canvas.offsetWidth);
-        camY += (e.clientY - lastMouseY) * (HEIGHT / canvas.offsetHeight);
-        draw();
-    }
+    if (isDragging) { camX += (e.clientX - lastMouseX) * (WIDTH / canvas.offsetWidth); camY += (e.clientY - lastMouseY) * (HEIGHT / canvas.offsetHeight); draw(); }
     lastMouseX = e.clientX; lastMouseY = e.clientY;
 });
 window.addEventListener('mouseup', () => isDragging = false);
-canvas.addEventListener('wheel', e => { if (state !== 'PLAY') return; e.preventDefault(); scale = Math.min(Math.max(scale * Math.exp(-e.deltaY * 0.001), 0.01), 50); draw(); }, { passive: false });
+canvas.addEventListener('wheel', e => { if (state === 'PLAY') { e.preventDefault(); scale = Math.min(Math.max(scale * Math.exp(-e.deltaY * 0.001), 0.01), 50); draw(); } }, { passive: false });
 
 canvas.addEventListener('touchstart', e => {
-    touchStartTime = Date.now();
     if (e.touches.length === 1) { lastMouseX = e.touches[0].clientX; lastMouseY = e.touches[0].clientY; isPinching = false; }
     else if (e.touches.length === 2) { isPinching = true; lastPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); lastMouseX = (e.touches[0].clientX + e.touches[1].clientX) / 2; lastMouseY = (e.touches[0].clientY + e.touches[1].clientY) / 2; }
 }, { passive: false });
@@ -354,20 +329,15 @@ canvas.addEventListener('touchmove', e => {
     e.preventDefault();
     if (e.touches.length === 2) {
         const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2; const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
         scale = Math.min(Math.max(scale * (dist / lastPinchDist), 0.01), 50);
-        camX += (midX - lastMouseX) * (WIDTH / canvas.offsetWidth);
-        camY += (midY - lastMouseY) * (HEIGHT / canvas.offsetHeight);
+        camX += (midX - lastMouseX) * (WIDTH / canvas.offsetWidth); camY += (midY - lastMouseY) * (HEIGHT / canvas.offsetHeight);
         lastPinchDist = dist; lastMouseX = midX; lastMouseY = midY; draw();
     }
 }, { passive: false });
 canvas.addEventListener('touchend', e => {
     e.preventDefault(); 
-    // ピンチ中だったり、時間が短すぎる場合は無視
-    if (!isPinching && e.changedTouches.length === 1) {
-        handleInteraction(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-    }
+    if (!isPinching && e.changedTouches.length === 1) handleInteraction(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
 }, { passive: false });
 
 function checkWin() { if (hasStarted && (board.cells.every(c => !c) || board.cells.every(c => c))) { isWin = true; stopAutoPlay(); document.getElementById('btnRetryLevel').style.display = 'block'; } }
