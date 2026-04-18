@@ -89,9 +89,9 @@
         input[type="range"] { width: 100%; margin: 4px 0; }
 
         @media (max-width: 1024px) {
-            #game-container { flex-direction: column; width: 95vw; height: auto; }
-            #canvas-area { width: 100%; height: 400px; }
-            #inspector { width: 100%; height: 500px; }
+            #game-container { flex-direction: column; width: 95vw; height: auto; max-height: 98vh; overflow-y: auto; }
+            #canvas-area { width: 100%; height: 400px; flex-shrink: 0; }
+            #inspector { width: 100%; height: auto; min-height: 400px; flex-shrink: 0; }
         }
     </style>
 </head>
@@ -168,7 +168,8 @@ let currentLang = 'ja';
 const WIDTH = 800, HEIGHT = 600;
 let state = 'TITLE', colsInput = "5", rowsInput = "5", activeInput = 'cols', board = null;
 let isWin = false, hasStarted = false, scale = 1.0, camX = WIDTH/2, camY = HEIGHT/2;
-let isDragging = false, lastMouseX = 0, lastMouseY = 0, baseCellSize = 50, lastPinchDist = 0;
+let isDragging = false, lastMouseX = 0, lastMouseY = 0, baseCellSize = 50;
+let lastPinchDist = 0, isPinching = false;
 let autoEntries = [], autoIndex = -1, isAutoPlaying = false, autoTimer = null, autoSpeed = 1000;
 
 class Source { constructor(x, y, maxDist) { this.x = x; this.y = y; this.time = 0; this.maxDist = maxDist; } step() { if (this.time < this.maxDist) this.time++; } }
@@ -251,28 +252,41 @@ function draw() {
     }
 }
 
-canvas.addEventListener('mousedown', e => {
-    lastMouseX = e.clientX; lastMouseY = e.clientY;
-    if (e.button === 2 || e.button === 1) { isDragging = true; return; }
-    const rect = canvas.getBoundingClientRect(), mx = (e.clientX-rect.left)*(WIDTH/rect.width), my = (e.clientY-rect.top)*(HEIGHT/rect.height);
+// 共通の入力処理
+function handleInteraction(clientX, clientY, isAlternative) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (clientX - rect.left) * (WIDTH / rect.width);
+    const my = (clientY - rect.top) * (HEIGHT / rect.height);
+
     if (state === 'TITLE') {
-        if (my > 490 && my < 540 && mx > WIDTH/2-100 && mx < WIDTH/2+100) initGame();
+        if (my > 490 && my < 540 && mx > WIDTH / 2 - 100 && mx < WIDTH / 2 + 100) initGame();
         else if (my > 430 && my < 470) {
-            activeInput = (mx < WIDTH/2) ? 'cols' : 'rows';
-            let v = prompt(i18n[currentLang][activeInput==='cols'?'promptCols':'promptRows'], activeInput==='cols'?colsInput:rowsInput);
-            if (v) { let n = parseInt(v); if(!isNaN(n)) { n=Math.max(2, Math.min(255, n)); if(activeInput==='cols')colsInput=n.toString(); else rowsInput=n.toString(); }}
+            activeInput = (mx < WIDTH / 2) ? 'cols' : 'rows';
+            let v = prompt(i18n[currentLang][activeInput === 'cols' ? 'promptCols' : 'promptRows'], activeInput === 'cols' ? colsInput : rowsInput);
+            if (v) { let n = parseInt(v); if (!isNaN(n)) { n = Math.max(2, Math.min(255, n)); if (activeInput === 'cols') colsInput = n.toString(); else rowsInput = n.toString(); } }
             draw();
         }
-    } else if (!isWin && !isAutoPlaying) {
+    } else if (state === 'PLAY' && !isWin && !isAutoPlaying && !isAlternative) {
         const worldX = (mx - camX) / scale + (board.width * baseCellSize) / 2;
         const worldY = (my - camY) / scale + (board.height * baseCellSize) / 2;
         const x = Math.floor(worldX / baseCellSize), y = Math.floor(worldY / baseCellSize);
         if (x >= 0 && y >= 0 && x < board.width && y < board.height) { board.addSource(x, y); board.step(); board.update(); hasStarted = true; checkWin(); draw(); }
     }
+}
+
+// Mouse Events
+canvas.addEventListener('mousedown', e => {
+    lastMouseX = e.clientX; lastMouseY = e.clientY;
+    if (e.button === 2 || e.button === 1) { isDragging = true; return; }
+    handleInteraction(e.clientX, e.clientY, false);
 });
 
 window.addEventListener('mousemove', e => {
-    if (isDragging) { camX += e.clientX - lastMouseX; camY += e.clientY - lastMouseY; draw(); }
+    if (isDragging) {
+        camX += (e.clientX - lastMouseX) * (WIDTH / canvas.offsetWidth);
+        camY += (e.clientY - lastMouseY) * (HEIGHT / canvas.offsetHeight);
+        draw();
+    }
     lastMouseX = e.clientX; lastMouseY = e.clientY;
 });
 window.addEventListener('mouseup', () => isDragging = false);
@@ -284,6 +298,51 @@ canvas.addEventListener('wheel', e => {
     draw();
 }, { passive: false });
 
+// Touch Events
+canvas.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+        lastMouseX = e.touches[0].clientX;
+        lastMouseY = e.touches[0].clientY;
+        isPinching = false;
+    } else if (e.touches.length === 2) {
+        isPinching = true;
+        lastPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        lastMouseX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        lastMouseY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 1 && !isPinching) {
+        // 1本指での移動はあえて制限（タップ操作との誤爆防止）
+    } else if (e.touches.length === 2) {
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+        // ズーム
+        const zoom = dist / lastPinchDist;
+        scale = Math.min(Math.max(scale * zoom, 0.01), 50);
+        
+        // 移動
+        camX += (midX - lastMouseX) * (WIDTH / canvas.offsetWidth);
+        camY += (midY - lastMouseY) * (HEIGHT / canvas.offsetHeight);
+
+        lastPinchDist = dist;
+        lastMouseX = midX;
+        lastMouseY = midY;
+        draw();
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+    if (!isPinching && e.changedTouches.length === 1) {
+        handleInteraction(e.changedTouches[0].clientX, e.changedTouches[0].clientY, false);
+    }
+}, { passive: false });
+
+// Game Logic
 function checkWin() { if (hasStarted && (board.cells.every(c => !c) || board.cells.every(c => c))) { isWin = true; stopAutoPlay(); document.getElementById('btnRetryLevel').style.display = 'block'; } }
 function toggleAutoPlay() { if (isAutoPlaying) stopAutoPlay(); else { if (autoEntries.length === 0) return; isAutoPlaying = true; updateUIText(); processNextAuto(); } }
 function stopAutoPlay() { isAutoPlaying = false; autoIndex = -1; clearTimeout(autoTimer); updateUIText(); renderInspector(); }
