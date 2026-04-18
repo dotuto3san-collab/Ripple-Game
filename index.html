@@ -308,9 +308,6 @@ canvas.addEventListener('touchmove', e => {
         scale = Math.min(Math.max(scale * (dist / lastPinchDist), 0.01), 50);
         camX += midX - lastMouseX; camY += midY - lastMouseY;
         lastPinchDist = dist; lastMouseX = midX; lastMouseY = midY; draw();
-    } else if (e.touches.length === 1 && state === 'PLAY') {
-        camX += e.touches[0].clientX - lastMouseX; camY += e.touches[0].clientY - lastMouseY;
-        lastMouseX = e.touches[0].clientX; lastMouseY = e.touches[0].clientY; draw();
     }
 }, { passive: false });
 canvas.addEventListener('touchend', e => {
