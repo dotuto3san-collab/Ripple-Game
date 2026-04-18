@@ -1,12 +1,25 @@
+HTML
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>RippleGame Professional</title>
     <style>
         :root { --bg-color: #121212; --panel-color: #2a2a2a; --accent: #3b82f6; --danger: #ef4444; }
-        body { background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: white; font-family: system-ui, -apple-system, sans-serif; touch-action: none; overflow: hidden; }
+        body { 
+            background-color: var(--bg-color); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            min-height: 100dvh; /* Safariのツールバー対策 */
+            margin: 0; 
+            color: white; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            touch-action: none; 
+            overflow: hidden; 
+        }
         
         #game-container { 
             display: flex; 
@@ -50,9 +63,24 @@
             font-size: 14px; 
             box-sizing: border-box;
             position: relative;
-            overflow: hidden; 
+            transition: transform 0.3s ease;
         }
         
+        /* スマホ用パネル開閉ボタン */
+        #toggleInspector {
+            display: none;
+            position: absolute;
+            left: -40px;
+            top: 0;
+            width: 40px;
+            height: 40px;
+            background: #555;
+            border: 1px solid #666;
+            border-right: none;
+            border-radius: 4px 0 0 4px;
+            z-index: 100;
+        }
+
         .header { font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #666; padding-bottom: 3px; flex-shrink: 0; }
         .usage-text { 
             font-size: 10px; color: #ccc; margin-bottom: 8px; line-height: 1.3; 
@@ -89,9 +117,29 @@
         input[type="range"] { width: 100%; margin: 4px 0; }
 
         @media (max-width: 1024px) {
-            #game-container { flex-direction: column; width: 95vw; height: auto; max-height: 98vh; overflow-y: auto; }
-            #canvas-area { width: 100%; height: 400px; flex-shrink: 0; }
-            #inspector { width: 100%; height: auto; min-height: 400px; flex-shrink: 0; }
+            body { overflow-y: auto; touch-action: auto; align-items: flex-start; padding: 5px; }
+            #game-container { 
+                flex-direction: column; 
+                width: 100%; 
+                height: auto; 
+                max-width: 100vw; 
+                padding: 5px;
+                gap: 5px;
+            }
+            #canvas-area { width: 100%; height: 70vh; height: 70dvh; flex-shrink: 0; }
+            #inspector { 
+                position: fixed;
+                right: 0;
+                top: 50px;
+                height: auto;
+                max-height: 80vh;
+                z-index: 1000;
+                transform: translateX(100%); /* 初期は隠す */
+                box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+            }
+            #inspector.open { transform: translateX(0); }
+            #toggleInspector { display: block; }
+            #extra-link { font-size: 11px; padding: 5px 8px; }
         }
     </style>
 </head>
@@ -106,6 +154,7 @@
     </div>
 
     <div id="inspector" style="display: none;">
+        <button id="toggleInspector" onclick="toggleInspector()">⚙️</button>
         <div class="header">
             <span id="labelAutoPlay">Auto Play</span>
             <button class="btn-plus" onclick="addEntry()">+</button>
@@ -219,6 +268,8 @@ function initGame() {
 
 function backToTitle() { stopAutoPlay(); state = 'TITLE'; inspector.style.display = 'none'; menuBtn.style.display = 'none'; langBtn.style.display = 'block'; document.getElementById('extra-link').style.display = 'block'; draw(); }
 
+function toggleInspector() { inspector.classList.toggle('open'); }
+
 function draw() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
@@ -252,12 +303,10 @@ function draw() {
     }
 }
 
-// 共通の入力処理
 function handleInteraction(clientX, clientY, isAlternative) {
     const rect = canvas.getBoundingClientRect();
     const mx = (clientX - rect.left) * (WIDTH / rect.width);
     const my = (clientY - rect.top) * (HEIGHT / rect.height);
-
     if (state === 'TITLE') {
         if (my > 490 && my < 540 && mx > WIDTH / 2 - 100 && mx < WIDTH / 2 + 100) initGame();
         else if (my > 430 && my < 470) {
@@ -274,13 +323,11 @@ function handleInteraction(clientX, clientY, isAlternative) {
     }
 }
 
-// Mouse Events
 canvas.addEventListener('mousedown', e => {
     lastMouseX = e.clientX; lastMouseY = e.clientY;
     if (e.button === 2 || e.button === 1) { isDragging = true; return; }
     handleInteraction(e.clientX, e.clientY, false);
 });
-
 window.addEventListener('mousemove', e => {
     if (isDragging) {
         camX += (e.clientX - lastMouseX) * (WIDTH / canvas.offsetWidth);
@@ -290,59 +337,26 @@ window.addEventListener('mousemove', e => {
     lastMouseX = e.clientX; lastMouseY = e.clientY;
 });
 window.addEventListener('mouseup', () => isDragging = false);
+canvas.addEventListener('wheel', e => { if (state !== 'PLAY') return; e.preventDefault(); scale = Math.min(Math.max(scale * Math.exp(-e.deltaY * 0.001), 0.01), 50); draw(); }, { passive: false });
 
-canvas.addEventListener('wheel', e => {
-    if (state !== 'PLAY') return; e.preventDefault();
-    const zoom = Math.exp(-e.deltaY * 0.001);
-    scale = Math.min(Math.max(scale * zoom, 0.01), 50);
-    draw();
-}, { passive: false });
-
-// Touch Events
 canvas.addEventListener('touchstart', e => {
-    if (e.touches.length === 1) {
-        lastMouseX = e.touches[0].clientX;
-        lastMouseY = e.touches[0].clientY;
-        isPinching = false;
-    } else if (e.touches.length === 2) {
-        isPinching = true;
-        lastPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-        lastMouseX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        lastMouseY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-    }
+    if (e.touches.length === 1) { lastMouseX = e.touches[0].clientX; lastMouseY = e.touches[0].clientY; isPinching = false; }
+    else if (e.touches.length === 2) { isPinching = true; lastPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); lastMouseX = (e.touches[0].clientX + e.touches[1].clientX) / 2; lastMouseY = (e.touches[0].clientY + e.touches[1].clientY) / 2; }
 }, { passive: false });
-
 canvas.addEventListener('touchmove', e => {
     e.preventDefault();
-    if (e.touches.length === 1 && !isPinching) {
-        // 1本指での移動はあえて制限（タップ操作との誤爆防止）
-    } else if (e.touches.length === 2) {
+    if (e.touches.length === 2) {
         const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-
-        // ズーム
-        const zoom = dist / lastPinchDist;
-        scale = Math.min(Math.max(scale * zoom, 0.01), 50);
-        
-        // 移動
+        scale = Math.min(Math.max(scale * (dist / lastPinchDist), 0.01), 50);
         camX += (midX - lastMouseX) * (WIDTH / canvas.offsetWidth);
         camY += (midY - lastMouseY) * (HEIGHT / canvas.offsetHeight);
-
-        lastPinchDist = dist;
-        lastMouseX = midX;
-        lastMouseY = midY;
-        draw();
+        lastPinchDist = dist; lastMouseX = midX; lastMouseY = midY; draw();
     }
 }, { passive: false });
+canvas.addEventListener('touchend', e => { if (!isPinching && e.changedTouches.length === 1) handleInteraction(e.changedTouches[0].clientX, e.changedTouches[0].clientY, false); }, { passive: false });
 
-canvas.addEventListener('touchend', e => {
-    if (!isPinching && e.changedTouches.length === 1) {
-        handleInteraction(e.changedTouches[0].clientX, e.changedTouches[0].clientY, false);
-    }
-}, { passive: false });
-
-// Game Logic
 function checkWin() { if (hasStarted && (board.cells.every(c => !c) || board.cells.every(c => c))) { isWin = true; stopAutoPlay(); document.getElementById('btnRetryLevel').style.display = 'block'; } }
 function toggleAutoPlay() { if (isAutoPlaying) stopAutoPlay(); else { if (autoEntries.length === 0) return; isAutoPlaying = true; updateUIText(); processNextAuto(); } }
 function stopAutoPlay() { isAutoPlaying = false; autoIndex = -1; clearTimeout(autoTimer); updateUIText(); renderInspector(); }
@@ -366,7 +380,6 @@ function renderInspector() {
 function updateSpeed(v) { autoSpeed = 1000 / parseFloat(v); document.getElementById('speedVal').innerText = parseFloat(v).toFixed(1); }
 function resetBoard() { if (!board) return; board.sources = []; board.update(); isWin = false; hasStarted = false; document.getElementById('btnRetryLevel').style.display = 'none'; draw(); }
 function retryGame() { resetBoard(); stopAutoPlay(); }
-
 window.addEventListener('keydown', e => { if (e.key === 'Escape') backToTitle(); });
 draw();
 </script>
