@@ -74,8 +74,9 @@
 
         .header { font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #666; padding-bottom: 3px; flex-shrink: 0; }
         .usage-text { 
-            font-size: 10px; color: #ccc; margin-bottom: 8px; line-height: 1.3; 
-            background: rgba(0,0,0,0.2); padding: 6px; border-radius: 2px; flex-shrink: 0;
+            font-size: 10px; color: #fff; /* 白に変更 */
+            margin-bottom: 8px; line-height: 1.3; 
+            background: rgba(0,0,0,0.4); padding: 6px; border-radius: 2px; flex-shrink: 0;
         }
         
         .scroll-area { flex-grow: 1; overflow-y: auto; background: #1a1a1a; padding: 4px; border: 1px solid #222; margin-bottom: 10px; }
@@ -98,22 +99,24 @@
             #game-container { 
                 flex-direction: column; 
                 width: 100vw; 
-                height: auto; 
+                height: 100dvh; /* 全体を使う */
                 padding: 0;
                 background: none;
                 box-shadow: none;
+                justify-content: flex-start;
             }
             #canvas-area { 
                 width: 100vw; 
-                height: 75vw; /* アスペクト比を維持（縦に伸ばさない） */
+                height: 75vw; /* 幅に合わせて高さを出し、縦伸びを防止 */
                 border: none;
                 border-bottom: 2px solid #555;
+                flex-shrink: 0;
             }
             #inspector { 
                 position: fixed;
                 left: 0;
                 top: 60px;
-                width: 300px; /* 設定枠を広く変更 */
+                width: 300px;
                 height: auto;
                 max-height: 70dvh;
                 background-color: rgba(68, 68, 68, 0.95);
@@ -236,9 +239,14 @@ function draw() {
     if (state === 'TITLE') {
         const t = i18n[currentLang];
         ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "bold 60px sans-serif"; ctx.fillText("RippleGame", WIDTH/2, 100);
-        ctx.font = "14px sans-serif"; ctx.textAlign = "left"; ctx.fillStyle = "#ccc";
+        
+        ctx.font = "14px sans-serif"; ctx.textAlign = "left"; 
+        ctx.fillStyle = "white"; /* 灰色から白に変更 */
         t.rules.forEach((line, i) => ctx.fillText(line, WIDTH/2 - 200, 160 + i * 22));
-        ctx.textAlign = "center"; ctx.fillStyle = "#888"; ctx.fillText(t.titleDesc, WIDTH/2, 410);
+        
+        ctx.textAlign = "center"; ctx.fillStyle = "white"; /* 灰色から白に変更 */
+        ctx.fillText(t.titleDesc, WIDTH/2, 410);
+        
         ctx.font = "bold 28px monospace";
         ctx.fillStyle = (activeInput === 'cols') ? "#3b82f6" : "white"; ctx.fillText(`Cols: ${colsInput}`, WIDTH/2 - 80, 450);
         ctx.fillStyle = (activeInput === 'rows') ? "#3b82f6" : "white"; ctx.fillText(`Rows: ${rowsInput}`, WIDTH/2 + 80, 450);
