@@ -81,7 +81,6 @@
             padding: 10px 20px; z-index: 50; border-radius: 6px; font-weight: bold;
         }
 
-        /* リンクボタンのスタイル */
         #extra-link { 
             position: absolute; top: 15px; left: 15px; z-index: 40; 
             background: rgba(136,34,34,0.9); color: #fff; padding: 10px 15px; 
@@ -116,7 +115,7 @@
 
 <div id="game-container">
     <div id="canvas-area">
-        <a id="extra-link" href="https://light-puzzle.netlify.app/">🔗 通常版はこちら</a>
+        <a id="extra-link" href="https://lights-puzzle.pages.dev/">🔗 通常版はこちら</a>
         <button id="langBtn" onclick="toggleLang()">JP/EN</button>
         <button id="menuBtn" onclick="backToTitle()" style="display: none;">MENU</button>
         <canvas id="gameCanvas" oncontextmenu="return false;"></canvas>
@@ -137,7 +136,7 @@
             <input type="range" id="speedRange" min="0.5" max="10.0" step="0.5" value="1.0" oninput="updateSpeed(this.value)" style="width: 100%;">
             <button id="autoStartBtn" class="btn-start" onclick="toggleAutoPlay()">START AUTO</button>
             <button id="btnResetBoard" class="btn-reset" onclick="resetBoard()">RESET BOARD</button>
-            <button id="btnRetryLevel" style="background:#d4a017; padding:12px; display:none; color:white; font-weight:bold; border-radius:4px; border:none;" onclick="retryGame()">RETRY LEVEL</button>
+            <button id="btnRetryLevel" style="background:#d4a017; padding:12px; display:none; color:white; font-weight:bold; border:none; border-radius:4px;" onclick="retryGame()">RETRY LEVEL</button>
         </div>
     </div>
 </div>
