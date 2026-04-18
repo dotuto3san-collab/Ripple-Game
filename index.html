@@ -3,479 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RippleGame</title>
+    <title>RippleGame Professional</title>
     <style>
-        body {
-            background-color: #222;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            color: white;
-            font-family: sans-serif;
-            touch-action: none;
-        }
-        #game-container {
-            display: flex;
-            flex-direction: row;
-            gap: 15px;
-            background-color: #333;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            max-width: 95vw;
-            position: relative;
-        }
-        @media (max-width: 850px) {
-            #game-container {
-                flex-direction: column;
-                align-items: center;
-                overflow-y: auto;
-                max-height: 95vh;
-            }
-            #inspector { width: 100% !important; box-sizing: border-box; }
-        }
-        canvas {
-            border: 2px solid #555;
-            background-color: #1a1a1a;
-            max-width: 100%;
-            height: auto;
-            touch-action: none;
-        }
-        #inspector {
-            width: 240px;
-            display: flex;
-            flex-direction: column;
-            background-color: #444;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .header {
-            font-weight: bold;
-            margin-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #666;
-            padding-bottom: 5px;
-        }
-        .usage-text { font-size: 11px; color: #ccc; margin-bottom: 10px; line-height: 1.4; }
-        .scroll-area {
-            flex-grow: 1;
-            overflow-y: auto;
-            max-height: 200px;
-            margin-bottom: 10px;
-            background: #2b2b2b;
-            padding: 5px;
-        }
-        .click-entry {
-            background-color: #555; padding: 5px; margin-bottom: 5px;
-            border-radius: 3px; display: flex; gap: 5px; align-items: center;
-        }
-        .click-entry input {
-            width: 40px; background-color: #222; color: #fff;
-            border: 1px solid #777; text-align: center; font-size: 16px;
-        }
-        .active-entry { border: 2px solid #ffff00; }
+        :root { --bg-color: #121212; --panel-color: #2a2a2a; --accent: #3b82f6; --danger: #ef4444; }
+        body { background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: white; font-family: system-ui, -apple-system, sans-serif; touch-action: none; overflow: hidden; }
         
-        button {
-            cursor: pointer; color: white; border: none; padding: 12px 8px;
-            border-radius: 3px; font-weight: bold; margin-top: 5px;
-            -webkit-tap-highlight-color: transparent;
+        #game-container { 
+            display: flex; 
+            flex-direction: row; 
+            gap: 10px; 
+            background-color: var(--panel-color); 
+            padding: 10px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            max-width: 98vw; 
+            height: 620px; 
+            align-items: stretch; 
         }
-        .btn-plus { background-color: #4a4; padding: 5px 15px; }
-        .btn-start { background-color: #44a; }
-        .btn-stop { background-color: #a44; }
-        .btn-reset { background-color: #666; }
-        .btn-retry { background-color: #d4a017; margin-top: 15px; padding: 15px; font-size: 18px; }
+        
+        #canvas-area { 
+            position: relative; 
+            background-color: #000; 
+            border: 2px solid #555; 
+            border-radius: 4px; 
+            overflow: hidden; 
+            width: 800px; 
+            height: 600px; 
+            cursor: grab;
+        }
+        #canvas-area:active { cursor: grabbing; }
 
-        .btn-remove {
-            background-color: #a44;
-            padding: 2px 8px;
-            margin-top: 0;
-            font-size: 16px;
-            line-height: 1.2;
+        #extra-link { 
+            position: absolute; top: 10px; left: 10px; z-index: 40; 
+            background: rgba(34,68,136,0.8); color: #fff; padding: 8px 12px; 
+            border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; border: 1px solid #224499; 
         }
-        .btn-remove:active { background-color: #f44; }
 
-        #menuBtn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background-color: rgba(0, 0, 0, 0.6);
-            border: 1px solid #777;
-            padding: 8px 12px;
-            z-index: 10;
-            display: none;
+        #inspector { 
+            width: 260px; 
+            height: 600px; 
+            display: flex; 
+            flex-direction: column; 
+            background-color: #444; 
+            padding: 10px; 
+            border-radius: 4px; 
+            font-size: 14px; 
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden; 
         }
-        #menuBtn:active { background-color: #555; }
+        
+        .header { font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #666; padding-bottom: 3px; flex-shrink: 0; }
+        .usage-text { 
+            font-size: 10px; color: #ccc; margin-bottom: 8px; line-height: 1.3; 
+            background: rgba(0,0,0,0.2); padding: 6px; border-radius: 2px; flex-shrink: 0;
+        }
+        
+        .scroll-area { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            background: #1a1a1a; 
+            padding: 4px; 
+            border: 1px solid #222; 
+            margin-bottom: 10px; 
+        }
+        
+        .click-entry { background-color: #555; padding: 3px; margin-bottom: 3px; border-radius: 3px; display: flex; gap: 4px; align-items: center; }
+        .click-entry span { font-size: 10px; color: #ccc; }
+        .click-entry input { width: 36px; background-color: #222; color: #fff; border: 1px solid #777; text-align: center; font-size: 11px; padding: 2px 0; }
+        .active-entry { border: 1px solid #ffff00; background-color: #664; }
+        
+        canvas { display: block; width: 100%; height: 100%; }
+        #langBtn { position: absolute; top: 10px; right: 10px; background: #444; font-size: 14px; padding: 8px 16px; border: 1px solid #666; z-index: 50; border-radius: 4px; color: white; }
+        #menuBtn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); border: 1px solid #fff; padding: 8px 16px; z-index: 45; display: none; border-radius: 4px; }
+        
+        button { cursor: pointer; color: white; border: none; border-radius: 3px; font-weight: bold; }
+        .btn-plus { background-color: #4a4; padding: 2px 10px; font-size: 16px; }
+        
+        .control-group { 
+            background: #333; padding: 8px; border-radius: 4px;
+            display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+        }
+        .btn-start { background-color: #44a; padding: 10px 0; font-size: 13px; }
+        .btn-reset { background-color: #666; padding: 10px 0; font-size: 13px; }
+        input[type="range"] { width: 100%; margin: 4px 0; }
 
-        .control-group {
-            margin-top: 10px; padding-top: 10px; border-top: 1px solid #666;
-            display: flex; flex-direction: column; gap: 5px;
+        @media (max-width: 1024px) {
+            #game-container { flex-direction: column; width: 95vw; height: auto; }
+            #canvas-area { width: 100%; height: 400px; }
+            #inspector { width: 100%; height: 500px; }
         }
-        input[type="range"] { width: 100%; height: 30px; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <button id="menuBtn" onclick="backToTitle()">MENU</button>
-    <canvas id="gameCanvas"></canvas>
+    <div id="canvas-area">
+        <a id="extra-link" href="https://lightspuzzle.netlify.app/">🔗 通常版はこちら</a>
+        <button id="langBtn" onclick="toggleLang()">JP/EN</button>
+        <button id="menuBtn" onclick="backToTitle()">MENU</button>
+        <canvas id="gameCanvas" oncontextmenu="return false;"></canvas>
+    </div>
 
     <div id="inspector" style="display: none;">
         <div class="header">
-            Auto Play
+            <span id="labelAutoPlay">Auto Play</span>
             <button class="btn-plus" onclick="addEntry()">+</button>
         </div>
-        <div class="usage-text">座標をリストに追加し、STARTで自動実行します。</div>
+        <div id="labelUsage" class="usage-text"></div>
         <div id="scrollArea" class="scroll-area"></div>
-        
         <div class="control-group">
-            <label>Speed: x<span id="speedVal">1.0</span></label>
-            <input type="range" id="speedRange" min="0.5" max="10.0" step="0.1" value="1.0" oninput="updateSpeed(this.value)">
-            
-            <button id="autoStartBtn" class="btn-start" onclick="toggleAutoPlay()">START AUTO</button>
-            <button class="btn-reset" onclick="resetBoard()">RESET BOARD</button>
-            <div id="winControls" style="display:none;">
-                <button class="btn-retry" onclick="retryGame()">RETRY LEVEL</button>
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom: 2px;">
+                <span id="labelSpeed">Speed</span><span>x<span id="speedVal">1.0</span></span>
             </div>
+            <input type="range" id="speedRange" min="0.5" max="10.0" step="0.5" value="1.0" oninput="updateSpeed(this.value)">
+            <button id="autoStartBtn" class="btn-start" onclick="toggleAutoPlay()">START AUTO</button>
+            <button id="btnResetBoard" class="btn-reset" onclick="resetBoard()">RESET BOARD</button>
+            <button id="btnRetryLevel" style="background:#d4a017; padding:10px 0; margin-top:2px; display:none;" onclick="retryGame()">RETRY LEVEL</button>
         </div>
     </div>
 </div>
 
 <script>
-const WIDTH = 640;
-const HEIGHT = 480;
-const PADDING = 40; 
-const MIN_LIMIT = 2;
-const MAX_LIMIT = 255;
-
-let state = 'TITLE'; 
-let colsInput = "5";   
-let rowsInput = "5";
-let activeInput = 'cols'; 
-let cellSize = 50;   
-
-let board = null;
-let isWin = false;
-let hasStarted = false;
-
-let autoEntries = [];
-let autoIndex = -1;
-let isAutoPlaying = false;
-let autoTimer = null;
-let autoSpeed = 1000;
-
-class Source {
-    constructor(x, y, maxDist) {
-        this.x = x; this.y = y; this.time = 0; this.maxDist = maxDist;
+const i18n = {
+    ja: {
+        rules: [
+            "【遊び方】",
+            "・タイルをタップして波紋を広げます。",
+            "・波紋が通過したタイルの色は反転します。",
+            "・画面内の全タイルを同じ色に揃えればクリア！",
+            "",
+            "【操作】",
+            "・タップ：波紋の発生",
+            "・右クリック/2本指ドラッグ：盤面の移動",
+            "・ホイール/ピンチ：ズーム"
+        ],
+        titleDesc: "サイズ設定：数字をタップして変更（2-255）",
+        startBtn: "START GAME", autoPlay: "Auto Play",
+        usage: "＋で座標を追加。STARTで順次実行。移動やズームで盤面を確認できます。",
+        speed: "速度", startAuto: "START AUTO", stopAuto: "STOP AUTO", resetBoard: "RESET BOARD", retryLevel: "RETRY LEVEL",
+        win: "CLEAR!!", promptCols: "列数を入力", promptRows: "行数を入力"
+    },
+    en: {
+        rules: [
+            "【HOW TO PLAY】",
+            "• Tap a tile to generate a ripple.",
+            "• Tiles hit by ripples flip their colors.",
+            "• Clear by making all tiles the same color!",
+            "",
+            "【CONTROLS】",
+            "• Tap: Generate ripple",
+            "• Right-click/2-Finger drag: Pan board",
+            "• Wheel/Pinch: Zoom"
+        ],
+        titleDesc: "Size: Tap numbers to change (2-255)",
+        startBtn: "START GAME", autoPlay: "Auto Play",
+        usage: "Tap '+' to add points. START runs them in order. Pan and zoom to inspect.",
+        speed: "Speed", startAuto: "START AUTO", stopAuto: "STOP AUTO", resetBoard: "RESET BOARD", retryLevel: "RETRY LEVEL",
+        win: "YOU WIN!", promptCols: "Enter columns", promptRows: "Enter rows"
     }
-    step() {
-        this.time++;
-        if (this.time > this.maxDist) this.time = this.maxDist;
-    }
-}
+};
 
+let currentLang = 'ja';
+const WIDTH = 800, HEIGHT = 600;
+let state = 'TITLE', colsInput = "5", rowsInput = "5", activeInput = 'cols', board = null;
+let isWin = false, hasStarted = false, scale = 1.0, camX = WIDTH/2, camY = HEIGHT/2;
+let isDragging = false, lastMouseX = 0, lastMouseY = 0, baseCellSize = 50, lastPinchDist = 0;
+let autoEntries = [], autoIndex = -1, isAutoPlaying = false, autoTimer = null, autoSpeed = 1000;
+
+class Source { constructor(x, y, maxDist) { this.x = x; this.y = y; this.time = 0; this.maxDist = maxDist; } step() { if (this.time < this.maxDist) this.time++; } }
 class Board {
-    constructor(w, h) {
-        this.width = w; this.height = h;
-        this.cells = new Array(w * h).fill(false);
-        this.sources = [];
-        this.maxDist = w + h;
-    }
-    addSource(x, y) {
-        this.sources.push(new Source(x, y, this.maxDist));
-    }
+    constructor(w, h) { this.width = w; this.height = h; this.cells = new Array(w * h).fill(false); this.sources = []; this.maxDist = w + h; }
+    addSource(x, y) { this.sources.push(new Source(x, y, this.maxDist)); }
     step() { for (let s of this.sources) s.step(); }
     update() {
         this.cells.fill(false);
         for (let s of this.sources) {
             for (let y = 0; y < this.height; y++) {
-                const rowOffset = y * this.width;
+                const row = y * this.width;
                 for (let x = 0; x < this.width; x++) {
-                    const dist = Math.abs(x - s.x) + Math.abs(y - s.y);
-                    if (dist <= s.time) this.cells[rowOffset + x] = !this.cells[rowOffset + x];
+                    if (Math.abs(x - s.x) + Math.abs(y - s.y) <= s.time) this.cells[row + x] = !this.cells[row + x];
                 }
             }
         }
     }
 }
 
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const inspector = document.getElementById('inspector');
-const menuBtn = document.getElementById('menuBtn');
-canvas.width = WIDTH;
-canvas.height = HEIGHT;
+const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+const inspector = document.getElementById('inspector'), menuBtn = document.getElementById('menuBtn');
+const langBtn = document.getElementById('langBtn');
+canvas.width = WIDTH; canvas.height = HEIGHT;
 
-// ★ ここで入力をリアルタイムで強制補正します
-function forceClamp(val) {
-    if (val === "") return ""; // 入力途中は空を許容
-    let num = parseInt(val);
-    if (isNaN(num)) return MIN_LIMIT.toString();
-    if (num < MIN_LIMIT) return MIN_LIMIT.toString();
-    if (num > MAX_LIMIT) return MAX_LIMIT.toString();
-    return num.toString();
+function toggleLang() { currentLang = currentLang === 'ja' ? 'en' : 'ja'; updateUIText(); draw(); }
+function updateUIText() {
+    const t = i18n[currentLang];
+    document.getElementById('labelAutoPlay').innerText = t.autoPlay;
+    document.getElementById('labelUsage').innerText = t.usage;
+    document.getElementById('labelSpeed').innerText = t.speed;
+    document.getElementById('btnResetBoard').innerText = t.resetBoard;
+    document.getElementById('btnRetryLevel').innerText = t.retryLevel;
+    document.getElementById('autoStartBtn').innerText = isAutoPlaying ? t.stopAuto : t.startAuto;
 }
 
 function initGame() {
-    // 開始時に最終確認
-    if (colsInput === "" || parseInt(colsInput) < MIN_LIMIT) colsInput = MIN_LIMIT.toString();
-    if (rowsInput === "" || parseInt(rowsInput) < MIN_LIMIT) rowsInput = MIN_LIMIT.toString();
-    
-    let c = parseInt(colsInput);
-    let r = parseInt(rowsInput);
-    
-    board = new Board(c, r);
-    isWin = false;
-    hasStarted = false;
-    autoIndex = -1;
-    document.getElementById('winControls').style.display = 'none';
-
-    cellSize = Math.min((WIDTH - PADDING * 2) / c, (HEIGHT - PADDING * 2) / r, 80);
-    state = 'PLAY';
-    inspector.style.display = 'flex';
-    menuBtn.style.display = 'block';
-    draw();
+    let c = parseInt(colsInput) || 5, r = parseInt(rowsInput) || 5;
+    board = new Board(c, r); isWin = false; hasStarted = false; autoIndex = -1;
+    baseCellSize = 50;
+    scale = Math.min(WIDTH/(c*baseCellSize+40), HEIGHT/(r*baseCellSize+40), 1.0);
+    camX = WIDTH/2; camY = HEIGHT/2;
+    state = 'PLAY'; inspector.style.display = 'flex'; menuBtn.style.display = 'block'; langBtn.style.display = 'none';
+    document.getElementById('extra-link').style.display = 'none';
+    updateUIText(); draw();
 }
 
-function backToTitle() {
-    stopAutoPlay();
-    state = 'TITLE';
-    inspector.style.display = 'none';
-    menuBtn.style.display = 'none';
-    draw();
-}
-
-function resetBoard() {
-    if (!board) return;
-    board.sources = [];
-    board.update();
-    isWin = false;
-    hasStarted = false;
-    document.getElementById('winControls').style.display = 'none';
-    draw();
-}
-
-function retryGame() {
-    resetBoard();
-    if (isAutoPlaying) stopAutoPlay();
-}
-
-function updateSpeed(val) {
-    const multiplier = parseFloat(val);
-    autoSpeed = 1000 / multiplier; 
-    document.getElementById('speedVal').innerText = multiplier.toFixed(1);
-}
-
-function addEntry() {
-    autoEntries.push({ x: 0, y: 0, id: Date.now() });
-    renderInspector();
-}
-
-function removeEntry(id) {
-    autoEntries = autoEntries.filter(e => e.id !== id);
-    renderInspector();
-}
-
-function renderInspector() {
-    const area = document.getElementById('scrollArea');
-    area.innerHTML = '';
-    autoEntries.forEach((entry, index) => {
-        const div = document.createElement('div');
-        div.className = `click-entry ${index === autoIndex ? 'active-entry' : ''}`;
-        div.innerHTML = `
-            <span>${index}:</span>
-            X <input type="number" value="${entry.x}" oninput="autoEntries[${index}].x=parseInt(this.value)||0">
-            Y <input type="number" value="${entry.y}" oninput="autoEntries[${index}].y=parseInt(this.value)||0">
-            <button class="btn-remove" onclick="removeEntry(${entry.id})">×</button>
-        `;
-        area.appendChild(div);
-    });
-}
-
-function toggleAutoPlay() {
-    if (isAutoPlaying) stopAutoPlay();
-    else {
-        if (autoEntries.length === 0) return;
-        isAutoPlaying = true;
-        document.getElementById('autoStartBtn').innerText = "STOP AUTO";
-        document.getElementById('autoStartBtn').className = "btn-stop";
-        processNextAuto();
-    }
-}
-
-function stopAutoPlay() {
-    isAutoPlaying = false;
-    autoIndex = -1;
-    clearTimeout(autoTimer);
-    document.getElementById('autoStartBtn').innerText = "START AUTO";
-    document.getElementById('autoStartBtn').className = "btn-start";
-    renderInspector();
-}
-
-function processNextAuto() {
-    if (!isAutoPlaying || isWin) return;
-    autoIndex++;
-    if (autoIndex >= autoEntries.length) autoIndex = 0;
-
-    const entry = autoEntries[autoIndex];
-    if (entry.x < board.width && entry.y < board.height) {
-        board.addSource(entry.x, entry.y);
-        board.step();
-        board.update();
-        hasStarted = true;
-        checkWin();
-    }
-    renderInspector();
-    draw();
-    autoTimer = setTimeout(processNextAuto, autoSpeed);
-}
-
-function checkWin() {
-    if (hasStarted && (board.cells.every(c => !c) || board.cells.every(c => c))) {
-        isWin = true;
-        stopAutoPlay();
-        document.getElementById('winControls').style.display = 'block';
-    }
-}
+function backToTitle() { stopAutoPlay(); state = 'TITLE'; inspector.style.display = 'none'; menuBtn.style.display = 'none'; langBtn.style.display = 'block'; document.getElementById('extra-link').style.display = 'block'; draw(); }
 
 function draw() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
-    if (state === 'TITLE') drawTitle();
-    else drawPlay();
-}
-
-function drawTitle() {
-    ctx.fillStyle = "white"; ctx.textAlign = "center";
-    ctx.font = "bold 50px sans-serif"; ctx.fillText("RippleGame", WIDTH / 2, 80);
-    
-    ctx.font = "16px sans-serif";
-    ctx.textAlign = "left";
-    const rules = [
-        "・タップした場所から、波紋のように色が塗られていきます",
-        "・既に色が塗られている場所は、重なると色が消えます",
-        "・すべてのタイルを「塗る」か「消す」ことができれば勝利！"
-    ];
-    ctx.fillStyle = "#ddd";
-    rules.forEach((line, i) => {
-        ctx.fillText(line, WIDTH / 2 - 200, 140 + i * 25);
-    });
-
-    ctx.textAlign = "center";
-    ctx.font = "24px sans-serif";
-    ctx.fillStyle = (activeInput === 'cols') ? "#ffff00" : "white";
-    ctx.fillText(`Cols: ${colsInput}${activeInput === 'cols' ? '_' : ''}`, WIDTH / 2, 260);
-    ctx.fillStyle = (activeInput === 'rows') ? "#ffff00" : "white";
-    ctx.fillText(`Rows: ${rowsInput}${activeInput === 'rows' ? '_' : ''}`, WIDTH / 2, 300);
-    
-    ctx.font = "14px sans-serif";
-    ctx.fillStyle = "#aaa";
-    ctx.fillText(`設定可能範囲: ${MIN_LIMIT} 〜 ${MAX_LIMIT}`, WIDTH / 2, 330);
-    ctx.fillText("数字をタップして入力 / ENTERで開始", WIDTH / 2, 350);
-
-    ctx.fillStyle = "white"; ctx.font = "bold 24px sans-serif";
-    ctx.fillText("START GAME", WIDTH / 2, 410);
-    ctx.strokeStyle = "white"; ctx.lineWidth = 2;
-    ctx.strokeRect(WIDTH / 2 - 100, 380, 200, 45);
-}
-
-function drawPlay() {
-    const offsetX = (WIDTH - board.width * cellSize) / 2;
-    const offsetY = (HEIGHT - board.height * cellSize) / 2;
-    const gap = cellSize > 5 ? 1 : 0;
-    for (let y = 0; y < board.height; y++) {
-        for (let x = 0; x < board.width; x++) {
-            const isOn = board.cells[y * board.width + x];
-            ctx.fillStyle = isOn ? 'rgb(255, 255, 0)' : 'rgb(50, 50, 50)';
-            ctx.fillRect(offsetX + x * cellSize, offsetY + y * cellSize, cellSize - gap, cellSize - gap);
-        }
-    }
-
-    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.font = "12px sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText("タップ: 波紋を広げる", 15, 65);
-    ctx.fillText("ESC: タイトルへ", 15, 85);
-
-    if (isWin) {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; ctx.fillRect(0, 0, WIDTH, HEIGHT);
-        ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "bold 40px sans-serif";
-        ctx.fillText("YOU WIN!", WIDTH / 2, HEIGHT / 2);
-    }
-}
-
-function handleInteraction(ex, ey) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = WIDTH / rect.width;
-    const scaleY = HEIGHT / rect.height;
-    const mx = (ex - rect.left) * scaleX;
-    const my = (ey - rect.top) * scaleY;
-
     if (state === 'TITLE') {
-        if (mx > WIDTH/2 - 100 && mx < WIDTH/2 + 100 && my > 380 && my < 425) {
-            initGame();
-        } else if (my > 230 && my < 270) {
-            activeInput = 'cols';
-            const val = prompt(`列数を入力してください (${MIN_LIMIT}-${MAX_LIMIT})`, colsInput);
-            if (val !== null) colsInput = forceClamp(val.replace(/[^0-9]/g, ""));
-        } else if (my > 270 && my < 310) {
-            activeInput = 'rows';
-            const val = prompt(`行数を入力してください (${MIN_LIMIT}-${MAX_LIMIT})`, rowsInput);
-            if (val !== null) rowsInput = forceClamp(val.replace(/[^0-9]/g, ""));
+        const t = i18n[currentLang];
+        ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "bold 60px sans-serif"; ctx.fillText("RippleGame", WIDTH/2, 100);
+        ctx.font = "14px sans-serif"; ctx.textAlign = "left"; ctx.fillStyle = "#ccc";
+        t.rules.forEach((line, i) => ctx.fillText(line, WIDTH/2 - 200, 160 + i * 22));
+        ctx.textAlign = "center"; ctx.fillStyle = "#888"; ctx.fillText(t.titleDesc, WIDTH/2, 410);
+        ctx.font = "bold 28px monospace";
+        ctx.fillStyle = (activeInput === 'cols') ? "#3b82f6" : "white"; ctx.fillText(`Cols: ${colsInput}`, WIDTH/2 - 80, 450);
+        ctx.fillStyle = (activeInput === 'rows') ? "#3b82f6" : "white"; ctx.fillText(`Rows: ${rowsInput}`, WIDTH/2 + 80, 450);
+        ctx.fillStyle = "#3b82f6"; ctx.fillRect(WIDTH/2 - 100, 490, 200, 50);
+        ctx.fillStyle = "white"; ctx.font = "bold 18px sans-serif"; ctx.fillText(t.startBtn, WIDTH/2, 522);
+    } else {
+        ctx.translate(camX, camY);
+        ctx.scale(scale, scale);
+        const bW = board.width * baseCellSize, bH = board.height * baseCellSize;
+        ctx.translate(-bW/2, -bH/2);
+        for (let y = 0; y < board.height; y++) {
+            for (let x = 0; x < board.width; x++) {
+                ctx.fillStyle = board.cells[y * board.width + x] ? '#ff0' : '#333';
+                ctx.fillRect(x * baseCellSize + 1, y * baseCellSize + 1, baseCellSize - 2, baseCellSize - 2);
+            }
         }
-        draw();
-    } else if (state === 'PLAY') {
-        if (isWin || isAutoPlaying) return;
-        const offsetX = (WIDTH - board.width * cellSize) / 2;
-        const offsetY = (HEIGHT - board.height * cellSize) / 2;
-        const x = Math.floor((mx - offsetX) / cellSize);
-        const y = Math.floor((my - offsetY) / cellSize);
-
-        if (x >= 0 && y >= 0 && x < board.width && y < board.height) {
-            board.addSource(x, y); board.step(); board.update();
-            hasStarted = true; checkWin(); draw();
+        if (isWin) {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = "rgba(0,0,0,0.8)"; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "bold 60px sans-serif"; ctx.fillText(i18n[currentLang].win, WIDTH/2, HEIGHT/2);
         }
     }
 }
 
-canvas.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    handleInteraction(e.clientX, e.clientY);
+canvas.addEventListener('mousedown', e => {
+    lastMouseX = e.clientX; lastMouseY = e.clientY;
+    if (e.button === 2 || e.button === 1) { isDragging = true; return; }
+    const rect = canvas.getBoundingClientRect(), mx = (e.clientX-rect.left)*(WIDTH/rect.width), my = (e.clientY-rect.top)*(HEIGHT/rect.height);
+    if (state === 'TITLE') {
+        if (my > 490 && my < 540 && mx > WIDTH/2-100 && mx < WIDTH/2+100) initGame();
+        else if (my > 430 && my < 470) {
+            activeInput = (mx < WIDTH/2) ? 'cols' : 'rows';
+            let v = prompt(i18n[currentLang][activeInput==='cols'?'promptCols':'promptRows'], activeInput==='cols'?colsInput:rowsInput);
+            if (v) { let n = parseInt(v); if(!isNaN(n)) { n=Math.max(2, Math.min(255, n)); if(activeInput==='cols')colsInput=n.toString(); else rowsInput=n.toString(); }}
+            draw();
+        }
+    } else if (!isWin && !isAutoPlaying) {
+        const worldX = (mx - camX) / scale + (board.width * baseCellSize) / 2;
+        const worldY = (my - camY) / scale + (board.height * baseCellSize) / 2;
+        const x = Math.floor(worldX / baseCellSize), y = Math.floor(worldY / baseCellSize);
+        if (x >= 0 && y >= 0 && x < board.width && y < board.height) { board.addSource(x, y); board.step(); board.update(); hasStarted = true; checkWin(); draw(); }
+    }
 });
 
-canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    handleInteraction(touch.clientX, touch.clientY);
+window.addEventListener('mousemove', e => {
+    if (isDragging) { camX += e.clientX - lastMouseX; camY += e.clientY - lastMouseY; draw(); }
+    lastMouseX = e.clientX; lastMouseY = e.clientY;
+});
+window.addEventListener('mouseup', () => isDragging = false);
+
+canvas.addEventListener('wheel', e => {
+    if (state !== 'PLAY') return; e.preventDefault();
+    const zoom = Math.exp(-e.deltaY * 0.001);
+    scale = Math.min(Math.max(scale * zoom, 0.01), 50);
+    draw();
 }, { passive: false });
 
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        backToTitle(); return;
-    }
-    if (state === 'TITLE') {
-        if (e.key === 'Enter') {
-            initGame();
-        } else if (e.key === 'Tab' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-            e.preventDefault(); activeInput = (activeInput === 'cols') ? 'rows' : 'cols';
-        } else if (e.key >= '0' && e.key <= '9') {
-            if (activeInput === 'cols') { 
-                colsInput = forceClamp(colsInput + e.key); 
-            } else { 
-                rowsInput = forceClamp(rowsInput + e.key); 
-            }
-        } else if (e.key === 'Backspace') {
-            if (activeInput === 'cols') colsInput = colsInput.slice(0, -1);
-            else rowsInput = rowsInput.slice(0, -1);
-        }
-        draw();
-    }
-});
+function checkWin() { if (hasStarted && (board.cells.every(c => !c) || board.cells.every(c => c))) { isWin = true; stopAutoPlay(); document.getElementById('btnRetryLevel').style.display = 'block'; } }
+function toggleAutoPlay() { if (isAutoPlaying) stopAutoPlay(); else { if (autoEntries.length === 0) return; isAutoPlaying = true; updateUIText(); processNextAuto(); } }
+function stopAutoPlay() { isAutoPlaying = false; autoIndex = -1; clearTimeout(autoTimer); updateUIText(); renderInspector(); }
+function processNextAuto() {
+    if (!isAutoPlaying || isWin) return;
+    autoIndex++; if (autoIndex >= autoEntries.length) autoIndex = 0;
+    const e = autoEntries[autoIndex];
+    if (e.x < board.width && e.y < board.height) { board.addSource(e.x, e.y); board.step(); board.update(); hasStarted = true; checkWin(); }
+    renderInspector(); draw(); autoTimer = setTimeout(processNextAuto, autoSpeed);
+}
+function addEntry() { autoEntries.push({ x: 0, y: 0, id: Date.now() }); renderInspector(); }
+function removeEntry(id) { autoEntries = autoEntries.filter(e => e.id !== id); renderInspector(); }
+function renderInspector() {
+    const area = document.getElementById('scrollArea'); area.innerHTML = '';
+    autoEntries.forEach((e, i) => {
+        const d = document.createElement('div'); d.className = `click-entry ${i === autoIndex ? 'active-entry' : ''}`;
+        d.innerHTML = `<span>#${i}</span>X:<input type="number" value="${e.x}" oninput="autoEntries[${i}].x=parseInt(this.value)||0">Y:<input type="number" value="${e.y}" oninput="autoEntries[${i}].y=parseInt(this.value)||0"><button style="background:#a44;padding:2px 5px;margin-left:auto;font-size:10px;" onclick="removeEntry(${e.id})">×</button>`;
+        area.appendChild(d);
+    });
+}
+function updateSpeed(v) { autoSpeed = 1000 / parseFloat(v); document.getElementById('speedVal').innerText = parseFloat(v).toFixed(1); }
+function resetBoard() { if (!board) return; board.sources = []; board.update(); isWin = false; hasStarted = false; document.getElementById('btnRetryLevel').style.display = 'none'; draw(); }
+function retryGame() { resetBoard(); stopAutoPlay(); }
 
+window.addEventListener('keydown', e => { if (e.key === 'Escape') backToTitle(); });
 draw();
 </script>
 </body>
