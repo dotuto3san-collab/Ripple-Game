@@ -116,7 +116,7 @@
 
 <div id="game-container">
     <div id="canvas-area">
-        <a id="extra-link" href="https://light-puzzle.netlify.app/">🔗 パズル版はこちら</a>
+        <a id="extra-link" href="https://light-puzzle.netlify.app/">🔗 通常版はこちら</a>
         <button id="langBtn" onclick="toggleLang()">JP/EN</button>
         <button id="menuBtn" onclick="backToTitle()" style="display: none;">MENU</button>
         <canvas id="gameCanvas" oncontextmenu="return false;"></canvas>
@@ -145,15 +145,15 @@
 <script>
 const i18n = {
     ja: {
-        rules: ["【遊び方】","・タイルをタップして波紋を広げます。","・波紋が通過したタイルの色は反転します。","・全タイルを同じ色にすればクリア！","","【操作】","・タップ：波紋の発生","・2本指ドラッグ：移動 / ピンチ：ズーム"],
+        rules: ["【遊び方】","・タイルをタップして波紋を広げます。","・波紋が通過したタイルの色は反転します。","・全タイルを同じ色にすればクリア！","","【操作：PC】","・クリック：波紋 / 右ドラッグ：移動","・ホイール：ズーム","【操作：スマホ】","・タップ：波紋 / 2本指ドラッグ：移動","・ピンチ：ズーム"],
         titleDesc: "サイズ設定：数字をタップして変更 (2-255)",
         startBtn: "START GAME", autoPlay: "Auto Play",
-        usage: "＋で座標を追加。STARTで順次実行。",
+        usage: "＋で座標を追加. STARTで順次実行.",
         speed: "速度", startAuto: "START AUTO", stopAuto: "STOP AUTO", resetBoard: "RESET BOARD", retryLevel: "RETRY LEVEL",
         win: "CLEAR!!", promptCols: "列数 (2-255)", promptRows: "行数 (2-255)"
     },
     en: {
-        rules: ["【HOW TO PLAY】","• Tap a tile to generate a ripple.","• Tiles hit by ripples flip colors.","• Clear by making all same color!","","【CONTROLS】","• Tap: Ripple / 2-Finger: Pan","• Pinch: Zoom"],
+        rules: ["【HOW TO PLAY】","• Tap a tile to generate a ripple.","• Tiles hit by ripples flip colors.","• Clear by making all same color!","","【CONTROLS: PC】","• Click: Ripple / Right-Drag: Pan","• Wheel: Zoom","【CONTROLS: Mobile】","• Tap: Ripple / 2-Finger: Pan","• Pinch: Zoom"],
         titleDesc: "Size: Tap numbers to change (2-255)",
         startBtn: "START GAME", autoPlay: "Auto Play",
         usage: "Tap '+' to add points. START runs them.",
@@ -231,10 +231,10 @@ function draw() {
     
     if (state === 'TITLE') {
         ctx.fillStyle = "white"; ctx.textAlign = "center"; 
-        ctx.font = "bold 48px sans-serif"; ctx.fillText("RippleGame", canvas.width/2, 80);
+        ctx.font = "bold 48px sans-serif"; ctx.fillText("RippleGame", canvas.width/2, 60);
         
-        ctx.font = "bold 16px sans-serif"; ctx.textAlign = "left"; 
-        t.rules.forEach((line, i) => ctx.fillText(line, canvas.width/2 - 160, 140 + i * 25));
+        ctx.font = "bold 14px sans-serif"; ctx.textAlign = "left"; 
+        t.rules.forEach((line, i) => ctx.fillText(line, canvas.width/2 - 160, 110 + i * 22));
         
         ctx.textAlign = "center"; ctx.font = "bold 14px sans-serif";
         ctx.fillText(t.titleDesc, canvas.width/2, 380);
