@@ -136,7 +136,7 @@
             <input type="range" id="speedRange" min="0.5" max="10.0" step="0.5" value="1.0" oninput="updateSpeed(this.value)" style="width: 100%;">
             <button id="autoStartBtn" class="btn-start" onclick="toggleAutoPlay()">START AUTO</button>
             <button id="btnResetBoard" class="btn-reset" onclick="resetBoard()">RESET BOARD</button>
-            <button id="btnRetryLevel" style="background:#d4a017; padding:12px; display:none; color:white; font-weight:bold; border:none; border-radius:4px;" onclick="retryGame()">RETRY LEVEL</button>
+            <button id="btnRetryLevel" style="background:#d4a017; padding:12px; display:none; color:white; font-weight:bold; border-radius:4px;" onclick="retryGame()">RETRY LEVEL</button>
         </div>
     </div>
 </div>
@@ -320,8 +320,8 @@ function processNextAuto() {
     if (!isAutoPlaying || isWin) return;
     autoIndex++; if (autoIndex >= autoEntries.length) autoIndex = 0;
     const e = autoEntries[autoIndex];
-    if (e.x < board.width && e.y < board.height) { board.addSource(e.x, e.y); board.step(); board.update(); hasStarted = true; checkWin(); }
-    renderInspector(); draw(); autoTimer = setTimeout(processNextAuto, autoSpeed);
+    if (e.x < board.width && e.y < board.height) { board.addSource(e.x, e.y); board.step(); board.update(); hasStarted = true; checkWin(); draw(); }
+    renderInspector(); autoTimer = setTimeout(processNextAuto, autoSpeed);
 }
 function addEntry() { autoEntries.push({ x: 0, y: 0, id: Date.now() }); renderInspector(); }
 function removeEntry(id) { autoEntries = autoEntries.filter(e => e.id !== id); renderInspector(); }
