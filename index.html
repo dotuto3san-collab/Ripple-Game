@@ -15,7 +15,7 @@
             margin: 0; 
             color: white; 
             font-family: system-ui, -apple-system, sans-serif; 
-            touch-action: none; /* 全体での不要なズーム防止 */
+            touch-action: none;
             overflow: hidden; 
         }
         
@@ -42,13 +42,6 @@
             height: 600px; 
             cursor: grab;
         }
-        #canvas-area:active { cursor: grabbing; }
-
-        #extra-link { 
-            position: absolute; top: 10px; left: 10px; z-index: 40; 
-            background: rgba(34,68,136,0.8); color: #fff; padding: 8px 12px; 
-            border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; border: 1px solid #224499; 
-        }
 
         #inspector { 
             width: 260px; 
@@ -67,15 +60,16 @@
         #toggleInspector {
             display: none;
             position: absolute;
-            right: -40px;
+            right: -45px;
             top: 0;
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             background: #555;
             border: 1px solid #666;
             border-left: none;
-            border-radius: 0 4px 4px 0;
+            border-radius: 0 8px 8px 0;
             z-index: 100;
+            font-size: 20px;
         }
 
         .header { font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #666; padding-bottom: 3px; flex-shrink: 0; }
@@ -84,19 +78,9 @@
             background: rgba(0,0,0,0.2); padding: 6px; border-radius: 2px; flex-shrink: 0;
         }
         
-        .scroll-area { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            background: #1a1a1a; 
-            padding: 4px; 
-            border: 1px solid #222; 
-            margin-bottom: 10px; 
-        }
-        
+        .scroll-area { flex-grow: 1; overflow-y: auto; background: #1a1a1a; padding: 4px; border: 1px solid #222; margin-bottom: 10px; }
         .click-entry { background-color: #555; padding: 3px; margin-bottom: 3px; border-radius: 3px; display: flex; gap: 4px; align-items: center; }
-        .click-entry span { font-size: 10px; color: #ccc; }
         .click-entry input { width: 36px; background-color: #222; color: #fff; border: 1px solid #777; text-align: center; font-size: 11px; padding: 2px 0; }
-        .active-entry { border: 1px solid #ffff00; background-color: #664; }
         
         canvas { display: block; width: 100%; height: 100%; }
         #langBtn { position: absolute; top: 10px; right: 10px; background: #444; font-size: 14px; padding: 8px 16px; border: 1px solid #666; z-index: 50; border-radius: 4px; color: white; }
@@ -105,47 +89,43 @@
         button { cursor: pointer; color: white; border: none; border-radius: 3px; font-weight: bold; touch-action: manipulation; }
         .btn-plus { background-color: #4a4; padding: 2px 10px; font-size: 16px; }
         
-        .control-group { 
-            background: #333; padding: 8px; border-radius: 4px;
-            display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
-        }
+        .control-group { background: #333; padding: 8px; border-radius: 4px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
         .btn-start { background-color: #44a; padding: 10px 0; font-size: 13px; }
         .btn-reset { background-color: #666; padding: 10px 0; font-size: 13px; }
-        input[type="range"] { width: 100%; margin: 4px 0; }
 
         @media (max-width: 1024px) {
-            body { align-items: stretch; padding: 0; }
+            body { align-items: flex-start; overflow-y: auto; }
             #game-container { 
                 flex-direction: column; 
-                width: 100%; 
-                height: 100dvh; 
-                max-width: 100vw; 
+                width: 100vw; 
+                height: auto; 
                 padding: 0;
-                gap: 0;
                 background: none;
+                box-shadow: none;
             }
-            #canvas-area { width: 100%; height: 100%; border: none; border-radius: 0; }
+            #canvas-area { 
+                width: 100vw; 
+                height: 75vw; /* アスペクト比を維持（縦に伸ばさない） */
+                border: none;
+                border-bottom: 2px solid #555;
+            }
             #inspector { 
                 position: fixed;
                 left: 0;
                 top: 60px;
-                width: 240px;
+                width: 300px; /* 設定枠を広く変更 */
                 height: auto;
-                max-height: 60dvh;
-                background-color: rgba(68, 68, 68, 0.8); /* 盤面が見えるよう透過 */
-                backdrop-filter: blur(4px);
+                max-height: 70dvh;
+                background-color: rgba(68, 68, 68, 0.95);
                 z-index: 1000;
                 transform: translateX(-100%);
                 box-shadow: 5px 0 15px rgba(0,0,0,0.5);
                 border-radius: 0 8px 8px 0;
             }
             #inspector.open { transform: translateX(0); }
-            #toggleInspector { display: block; width: 45px; height: 45px; right: -45px; }
-            
-            /* スマホ版+ボタンと列の大きさ変更 */
-            .btn-plus { padding: 8px 20px; font-size: 20px; }
-            .click-entry { padding: 6px; }
-            .click-entry input { width: 45px; height: 30px; font-size: 14px; }
+            #toggleInspector { display: block; }
+            .btn-plus { padding: 10px 25px; font-size: 22px; }
+            .click-entry input { width: 50px; height: 32px; font-size: 16px; }
         }
     </style>
 </head>
@@ -153,7 +133,6 @@
 
 <div id="game-container">
     <div id="canvas-area">
-        <a id="extra-link" href="https://lightspuzzle.netlify.app/">🔗 通常版はこちら</a>
         <button id="langBtn" onclick="toggleLang()">JP/EN</button>
         <button id="menuBtn" onclick="backToTitle()">MENU</button>
         <canvas id="gameCanvas" oncontextmenu="return false;"></canvas>
@@ -168,13 +147,13 @@
         <div id="labelUsage" class="usage-text"></div>
         <div id="scrollArea" class="scroll-area"></div>
         <div class="control-group">
-            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom: 2px;">
+            <div style="display:flex; justify-content:space-between; font-size:11px;">
                 <span id="labelSpeed">Speed</span><span>x<span id="speedVal">1.0</span></span>
             </div>
             <input type="range" id="speedRange" min="0.5" max="10.0" step="0.5" value="1.0" oninput="updateSpeed(this.value)">
             <button id="autoStartBtn" class="btn-start" onclick="toggleAutoPlay()">START AUTO</button>
             <button id="btnResetBoard" class="btn-reset" onclick="resetBoard()">RESET BOARD</button>
-            <button id="btnRetryLevel" style="background:#d4a017; padding:10px 0; margin-top:2px; display:none;" onclick="retryGame()">RETRY LEVEL</button>
+            <button id="btnRetryLevel" style="background:#d4a017; padding:10px 0; display:none;" onclick="retryGame()">RETRY LEVEL</button>
         </div>
     </div>
 </div>
@@ -185,7 +164,7 @@ const i18n = {
         rules: ["【遊び方】","・タイルをタップして波紋を広げます。","・波紋が通過したタイルの色は反転します。","・画面内の全タイルを同じ色に揃えればクリア！","","【操作】","・タップ：波紋の発生","・右クリック/2本指ドラッグ：盤面の移動","・ホイール/ピンチ：ズーム"],
         titleDesc: "サイズ設定：数字をタップして変更（2-255）",
         startBtn: "START GAME", autoPlay: "Auto Play",
-        usage: "＋で座標を追加。STARTで順次実行。移動やズームで盤面を確認できます。",
+        usage: "＋で座標を追加。STARTで順次実行。",
         speed: "速度", startAuto: "START AUTO", stopAuto: "STOP AUTO", resetBoard: "RESET BOARD", retryLevel: "RETRY LEVEL",
         win: "CLEAR!!", promptCols: "列数を入力", promptRows: "行数を入力"
     },
@@ -193,7 +172,7 @@ const i18n = {
         rules: ["【HOW TO PLAY】","• Tap a tile to generate a ripple.","• Tiles hit by ripples flip their colors.","• Clear by making all tiles the same color!","","【CONTROLS】","• Tap: Generate ripple","• Right-click/2-Finger drag: Pan board","• Wheel/Pinch: Zoom"],
         titleDesc: "Size: Tap numbers to change (2-255)",
         startBtn: "START GAME", autoPlay: "Auto Play",
-        usage: "Tap '+' to add points. START runs them in order. Pan and zoom to inspect.",
+        usage: "Tap '+' to add points. START runs them.",
         speed: "Speed", startAuto: "START AUTO", stopAuto: "STOP AUTO", resetBoard: "RESET BOARD", retryLevel: "RETRY LEVEL",
         win: "YOU WIN!", promptCols: "Enter columns", promptRows: "Enter rows"
     }
@@ -226,8 +205,7 @@ class Board {
 }
 
 const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
-const inspector = document.getElementById('inspector'), menuBtn = document.getElementById('menuBtn');
-const langBtn = document.getElementById('langBtn');
+const inspector = document.getElementById('inspector'), menuBtn = document.getElementById('menuBtn'), langBtn = document.getElementById('langBtn');
 canvas.width = WIDTH; canvas.height = HEIGHT;
 
 function toggleLang() { currentLang = currentLang === 'ja' ? 'en' : 'ja'; updateUIText(); draw(); }
@@ -247,16 +225,14 @@ function initGame() {
     scale = Math.min(WIDTH/(c*50+40), HEIGHT/(r*50+40), 1.0);
     camX = WIDTH/2; camY = HEIGHT/2;
     state = 'PLAY'; inspector.style.display = 'flex'; menuBtn.style.display = 'block'; langBtn.style.display = 'none';
-    document.getElementById('extra-link').style.display = 'none';
     updateUIText(); draw();
 }
 
-function backToTitle() { stopAutoPlay(); state = 'TITLE'; inspector.style.display = 'none'; menuBtn.style.display = 'none'; langBtn.style.display = 'block'; document.getElementById('extra-link').style.display = 'block'; draw(); }
+function backToTitle() { stopAutoPlay(); state = 'TITLE'; inspector.style.display = 'none'; menuBtn.style.display = 'none'; langBtn.style.display = 'block'; draw(); }
 function toggleInspector() { inspector.classList.toggle('open'); }
 
 function draw() {
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, WIDTH, HEIGHT);
     if (state === 'TITLE') {
         const t = i18n[currentLang];
         ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "bold 60px sans-serif"; ctx.fillText("RippleGame", WIDTH/2, 100);
@@ -269,8 +245,7 @@ function draw() {
         ctx.fillStyle = "#3b82f6"; ctx.fillRect(WIDTH/2 - 100, 490, 200, 50);
         ctx.fillStyle = "white"; ctx.font = "bold 18px sans-serif"; ctx.fillText(t.startBtn, WIDTH/2, 522);
     } else {
-        ctx.translate(camX, camY);
-        ctx.scale(scale, scale);
+        ctx.translate(camX, camY); ctx.scale(scale, scale);
         const bW = board.width * baseCellSize, bH = board.height * baseCellSize;
         ctx.translate(-bW/2, -bH/2);
         for (let y = 0; y < board.height; y++) {
@@ -280,15 +255,14 @@ function draw() {
             }
         }
         if (isWin) {
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.fillStyle = "rgba(0,0,0,0.8)"; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "rgba(0,0,0,0.8)"; ctx.fillRect(0, 0, WIDTH, HEIGHT);
             ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "bold 60px sans-serif"; ctx.fillText(i18n[currentLang].win, WIDTH/2, HEIGHT/2);
         }
     }
 }
 
 function handleInteraction(clientX, clientY) {
-    if (Date.now() - lastInteractionTime < 100) return; // 連打による意図しない多重反応防止
+    if (Date.now() - lastInteractionTime < 100) return;
     lastInteractionTime = Date.now();
     const rect = canvas.getBoundingClientRect();
     const mx = (clientX - rect.left) * (WIDTH / rect.width);
@@ -296,7 +270,7 @@ function handleInteraction(clientX, clientY) {
     if (state === 'TITLE') {
         if (my > 490 && my < 540 && mx > WIDTH / 2 - 100 && mx < WIDTH / 2 + 100) initGame();
         else if (my > 430 && my < 470) {
-            activeInput = (mx < WIDTH / 2) ? 'cols' : 'rows';
+            activeInput = (mx < WIDTH/2) ? 'cols' : 'rows';
             let v = prompt(i18n[currentLang][activeInput === 'cols' ? 'promptCols' : 'promptRows'], activeInput === 'cols' ? colsInput : rowsInput);
             if (v) { let n = parseInt(v); if (!isNaN(n)) { n = Math.max(2, Math.min(255, n)); if (activeInput === 'cols') colsInput = n.toString(); else rowsInput = n.toString(); } }
             draw();
