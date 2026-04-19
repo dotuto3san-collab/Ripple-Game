@@ -32,7 +32,8 @@
             background-color: #000; 
             flex-grow: 1;
             overflow: hidden; 
-            cursor: grab;
+            /* カーソルを精密操作用の十字に変更 */
+            cursor: crosshair;
         }
 
         #inspector { 
@@ -261,11 +262,14 @@ function draw() {
     }
 }
 
-function handleInteraction(clientX, clientY) {
+function handleInteraction(clientX, clientY, isMouse = false) {
     if (Date.now() - lastInteractionTime < 100) return;
     lastInteractionTime = Date.now();
+    
+    // キャンバス上の相対座標を厳密に取得
     const rect = canvas.getBoundingClientRect();
-    const mx = clientX - rect.left; const my = clientY - rect.top;
+    const mx = clientX - rect.left;
+    const my = clientY - rect.top;
     
     if (state === 'TITLE') {
         if (my > 460 && my < 510 && mx > canvas.width / 2 - 100 && mx < canvas.width / 2 + 100) initGame();
@@ -276,6 +280,7 @@ function handleInteraction(clientX, clientY) {
             draw();
         }
     } else if (state === 'PLAY' && !isWin && !isAutoPlaying) {
+        // カメラ座標とズーム率を考慮したワールド座標への変換
         const worldX = (mx - camX) / scale + (board.width * baseCellSize) / 2;
         const worldY = (my - camY) / scale + (board.height * baseCellSize) / 2;
         const x = Math.floor(worldX / baseCellSize), y = Math.floor(worldY / baseCellSize);
@@ -286,7 +291,8 @@ function handleInteraction(clientX, clientY) {
 canvas.addEventListener('mousedown', e => {
     lastMouseX = e.clientX; lastMouseY = e.clientY;
     if (e.button === 2 || e.button === 1) { isDragging = true; return; }
-    handleInteraction(e.clientX, e.clientY);
+    // マウスイベントの座標を直接渡す
+    handleInteraction(e.clientX, e.clientY, true);
 });
 window.addEventListener('mousemove', e => {
     if (isDragging) { camX += e.clientX - lastMouseX; camY += e.clientY - lastMouseY; draw(); }
